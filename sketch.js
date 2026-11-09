@@ -189,7 +189,7 @@ function drawAssi(xVassoio, yVassoio, altezzaVassoio) {
   // titolo dell'asse x, sotto il vassoio allineato a dx
   fill("#7A4E33");
   textAlign(RIGHT, TOP);
-  text("Kg di caffè per persona in un anno", destra, yVassoio + altezzaVassoio + 12);
+  text("Kg di caffè per persona all'anno", destra, yVassoio + altezzaVassoio + 12);
 }
 
 // x = centro della tazza, yAppoggio = dove appoggia il piattino
