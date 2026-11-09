@@ -1,0 +1,16 @@
+rowname,paese,kg_procapite,espresso,americano,cappuccino,latte
+01,Finlandia,9.6,5,75,8,12
+02,Norvegia,7.2,6,70,10,14
+03,Paesi Bassi,6.7,10,55,20,15
+04,Slovenia,6.1,40,20,15,25
+05,Austria,5.5,25,30,30,15
+06,Danimarca,5.3,8,65,12,15
+07,Brasile,4.8,15,60,10,15
+08,Svizzera,3.9,25,35,25,15
+09,Costa Rica,3.7,5,65,5,25
+10,Italia,3.4,60,5,25,10
+11,Stati Uniti,3.1,5,60,12,23
+12,Corea del Sud,2.6,10,60,10,20
+13,Regno Unito,1.7,8,32,27,33
+14,Giappone,1.5,5,65,10,20
+15,Colombia,1.4,5,70,5,20
