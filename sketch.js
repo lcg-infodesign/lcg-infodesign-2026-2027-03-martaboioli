@@ -2,24 +2,25 @@ let dati;
 let maxKg = 0; // il paese che beve più caffè (serve per proporzionare la grandezza delle tazze)
 
 // l'ordine è dal basso verso l'alto della tazza, dal più scuro al più chiaro
-//nomi delle bevande nel dataset
+// nomi delle bevande nel dataset
 let bevande = ["espresso", "americano", "cappuccino", "latte"];
 // nomi delle bevande nel grafico
-let nomiBevande = ["Espresso", "Americano / filtro", "Cappuccino", "Caffellatte"];
+let nomiBevande = ["Espresso", "Americano/filtro", "Cappuccino", "Caffellatte"];
 let coloriBevande = ["#3B2116", "#7A4E33", "#B98A5E", "#E6CFAF"];
 
 // assi del grafico disegnato sul vassoio
-let asseXmin = 1; // asse x: kg di caffè a persona, valore minimo 1
-let asseXmax = 10; // valore massimo 10 (nessun paese beve meno di 1 kg)
-let asseYmin = 10; // asse y: % di bevande con il latte, da 10% 
-let asseYmax = 70; // max bevande con latte al 70%
- 
+let asseXmin = 1; // asse x: kg di caffè a persona, valore minimo 1kg
+let asseXmax = 10; // valore max 10kg (nessun paese beve meno di 1 kg, quindi non parto da 0)
+let asseYmin = 10; // asse y: % di bevande con il latte, da 10%
+let asseYmax = 70; // al valore massimo 70%
+
 // bordi dell'area del grafico e tazza più grande
 let sinistra, destra, alto, basso;
-let larghezzaMax = 75;
+let larghezzaMax;
 
 async function setup() {
   createCanvas(windowWidth, windowHeight);
+  angleMode(DEGREES); // imposto angoli in gradi
   // se sul computer non c'è futura usa un altro font senza grazie
   textFont("Futura, sans-serif");
 
@@ -27,7 +28,6 @@ async function setup() {
 
   // cerco il valore più alto di kg a persona
   for (let riga = 0; riga < dati.getRowCount(); riga++) {
-    // prendo il valore dalla tabella
     let kg = dati.getNum(riga, "kg_procapite");
     if (kg > maxKg) {
       maxKg = kg;
@@ -39,25 +39,26 @@ function draw() {
   background("#EFE4D6");
   drawTitolo();
 
-  // il vassoio occupa tutto lo spazio a sinistra della legenda
-  let xVassoio = 70;
+  // il vassoio occupa tutta la larghezza della finestra con 50 px di margine ai lati per le maniglie
+  let xVassoio = 50;
   let yVassoio = 150;
-  let larghezzaVassoio = width - 350 - xVassoio; // finisce 350 px prima del bordo destro
-  let altezzaVassoio = height - yVassoio - 50; // 50 px liberi in basso
+  let larghezzaVassoio = width - 100;
+  let altezzaVassoio = height - yVassoio - 50; // 50 px liberi in basso per il bordo
   drawVassoio(xVassoio, yVassoio, larghezzaVassoio, altezzaVassoio);
- 
-  // area del grafico dentro il vassoio: lascio spazio sopra per le tazze e ai lati per le scritte
+
+  // area del grafico dentro il vassoio con spazio sopra per le tazze e ai lati per le scritte
   sinistra = xVassoio + 80;
   destra = xVassoio + larghezzaVassoio - 60;
-  alto = yVassoio + 140;
+  alto = yVassoio + 110;
   basso = yVassoio + altezzaVassoio - 70;
+  /* la tazza più grande è larga al massimo 75 px, ma nelle finestre basse si rimpicciolisce
+ così le tazze non finiscono sotto lo scontrino */
+  larghezzaMax = min(75, (basso - alto) * 0.12);
   drawAssi(xVassoio, yVassoio, altezzaVassoio);
 
-  /* primo ciclo, cerca la tazza su cui è il mouse.
-  se due tazze si sovrappongono prende quella messa "davanti" */
-
-  let paeseHover = -1; // il paese su cui si trova il mouse (-1 = nessuno perché le righe iniziano da 0)
-
+  /* primo ciclo, cerco la tazza su cui c'è il mouse.
+  Se due tazze si sovrappongono prende quella messa "davanti" */
+  let paeseHover = -1; // -1 = nessuno (le righe iniziano da 0)
   for (let riga = 0; riga < dati.getRowCount(); riga++) {
     let x = posizioneX(riga);
     let y = posizioneY(riga);
@@ -67,23 +68,23 @@ function draw() {
       paeseHover = riga;
     }
   }
- 
-  /* SECONDO CICLO: disegno le tazze.
-  Nel csv i paesi sono ordinati dal più "lattoso" al meno, così prima disegno
+
+  /* secondo ciclo, disegno le tazze.
+  nel dataset i paesi sono ordinati da quello con bevande con più latte al meno, così prima disegno
   le tazze in alto (in fondo al vassoio) e poi quelle in basso, che stanno davanti */
   for (let riga = 0; riga < dati.getRowCount(); riga++) {
     let x = posizioneX(riga);
     let y = posizioneY(riga);
     let w = larghezzaTazza(dati.getNum(riga, "kg_procapite"));
- 
+
     // leggo le 4 percentuali di questo paese e le metto in un array
     let percentuali = [];
     for (let i = 0; i < bevande.length; i++) {
       percentuali.push(dati.getNum(riga, bevande[i]));
     }
- 
+
     drawTazza(x, y, w, percentuali, riga == paeseHover);
- 
+
     // nome del paese sotto il piattino
     noStroke();
     textAlign(CENTER, TOP);
@@ -91,14 +92,12 @@ function draw() {
     textSize(12);
     text(dati.getString(riga, "paese"), x, y + 5);
   }
- 
+
   drawLegenda();
 
   /* riquadro hover disegnato per ultimo, così sta sopra a tutto.
   RICORDATI CHE != STA PER "DIVERSO DA" quindi se il valore di paeseHover
-  è diverso da -1, che è il valore assegnato inizialmente (dato che le righe
-  iniziano da 0) e quindi significa che non sto passando con il mouse sopra
-  ad un paese, disegno il riquadro con i dettagli e le percentuali */
+  è diverso da -1 sto passando con il mouse sopra ad un paese */
   if (paeseHover != -1) {
     drawRiquadro(paeseHover);
   }
@@ -109,7 +108,7 @@ function posizioneX(riga) {
   let kg = dati.getNum(riga, "kg_procapite");
   return map(kg, asseXmin, asseXmax, sinistra, destra);
 }
- 
+
 // y della tazza = % di bevande con il latte (cappuccino + caffellatte)
 // è il punto dove appoggia il piattino
 function posizioneY(riga) {
@@ -117,7 +116,7 @@ function posizioneY(riga) {
   // basso e alto sono invertiti perché sullo schermo la y cresce verso il basso
   return map(conLatte, asseYmin, asseYmax, basso, alto);
 }
- 
+
 // grandezza: uso la radice quadrata così l'AREA della tazza è proporzionale ai kg
 function larghezzaTazza(kg) {
   return map(sqrt(kg), 0, sqrt(maxKg), 0, larghezzaMax);
@@ -138,33 +137,29 @@ function drawTitolo() {
 // vassoio di legno con le maniglie ai lati
 function drawVassoio(x, y, w, h) {
   noStroke();
- 
-  // ombra leggera sotto il vassoio
-  fill(0, 0, 0, 25);
-  rect(x + 8, y + 10, w, h, 30);
- 
-  // maniglie: un rettangolo arrotondato con un buco del colore dello sfondo
+
+  // maniglie, rettangolo arrotondato con un buco del colore dello sfondo
   fill("#6E4630");
   rect(x - 30, y + h / 2 - 50, 50, 100, 20);
   rect(x + w - 20, y + h / 2 - 50, 50, 100, 20);
   fill("#EFE4D6");
   rect(x - 20, y + h / 2 - 30, 14, 60, 7);
   rect(x + w + 6, y + h / 2 - 30, 14, 60, 7);
- 
+
   // bordo del vassoio
   fill("#6E4630");
   rect(x, y, w, h, 30);
- 
-  // piano del vassoio, 22 px più dentro del bordo
+
+  // piano del vassoio, un po' più dentro del bordo
   fill("#8A5A3B");
   rect(x + 22, y + 22, w - 44, h - 44, 18);
 }
- 
+
 // griglia e numeri degli assi, incisi sul vassoio
 function drawAssi(xVassoio, yVassoio, altezzaVassoio) {
   textSize(12);
   fill("#F1DCC0");
- 
+
   // asse x: una linea verticale per ogni kg, numeri sul bordo davanti del vassoio
   for (let kg = asseXmin; kg <= asseXmax; kg++) {
     let x = map(kg, asseXmin, asseXmax, sinistra, destra);
@@ -175,8 +170,8 @@ function drawAssi(xVassoio, yVassoio, altezzaVassoio) {
     textAlign(CENTER, CENTER);
     text(kg, x, yVassoio + altezzaVassoio - 11); // al centro del bordo (alto 22 px)
   }
- 
-  // asse y: una linea orizzontale ogni 10%, numeri a sinistra
+
+  // asse y: una linea orizzontale ogni 10% di latte, numeri a sinistra
   for (let p = asseYmin; p <= asseYmax; p = p + 10) {
     let y = map(p, asseYmin, asseYmax, basso, alto);
     stroke("#9A6845");
@@ -186,20 +181,19 @@ function drawAssi(xVassoio, yVassoio, altezzaVassoio) {
     textAlign(RIGHT, CENTER);
     text(p + "%", sinistra - 12, y);
   }
- 
+
   // titoli degli assi
   textSize(13);
   textAlign(LEFT, TOP);
-  text("↑ più latte  (% di cappuccino + caffellatte)", sinistra - 50, yVassoio + 40);
-  text("↓ più caffè nero", sinistra - 50, basso + 14);
-  // titolo dell'asse x: sotto il vassoio, allineato a destra
+  text("Percentuale di latte", sinistra - 40, yVassoio + 40);
+  // titolo dell'asse x, sotto il vassoio allineato a dx
   fill("#7A4E33");
   textAlign(RIGHT, TOP);
-  text("kg di caffè a persona in un anno →", destra, yVassoio + altezzaVassoio + 12);
+  text("Kg di caffè per persona in un anno", destra, yVassoio + altezzaVassoio + 12);
 }
- 
-//x = centro della tazza, yAppoggio = dove appoggia il piattino
-//w = larghezza della tazza, percentuali = le 4 bevande, evidenziata = mouse sopra
+
+// x = centro della tazza, yAppoggio = dove appoggia il piattino
+// w = larghezza della tazza, percentuali = le 4 bevande, evidenziata = mouse sopra
 function drawTazza(x, yAppoggio, w, percentuali, evidenziata) {
   let h = w * 0.9; // altezza della tazza
   let yBase = yAppoggio - w * 0.12; // fondo della tazza (appoggiato sul piattino)
@@ -207,7 +201,7 @@ function drawTazza(x, yAppoggio, w, percentuali, evidenziata) {
 
   push();
 
-  // disegno piattino 
+  // disegno piattino
   fill("#D9C9B6");
   noStroke();
   ellipse(x, yAppoggio - w * 0.08, w * 1.5, w * 0.16);
@@ -250,18 +244,18 @@ function drawTazza(x, yAppoggio, w, percentuali, evidenziata) {
   rect(xInterno, yInterno, larghezzaInterna, altezzaInterna, 0, 0, w * 0.1, w * 0.1);
   endClip();
 
-  //strati di caffè: parto dal fondo e salgo
+  // strati di caffè, parto dal fondo e salgo
   noStroke();
   let y = yBase - margine; //parto dal fondo
   for (let i = 0; i < percentuali.length; i++) {
     let altezzaStrato = (altezzaInterna * percentuali[i]) / 100;
     fill(coloriBevande[i]);
     rect(xInterno, y - altezzaStrato, larghezzaInterna, altezzaStrato);
-    y = y - altezzaStrato; //lo strato dopo parte sopra a questo
+    y = y - altezzaStrato; // lo strato dopo parte sopra a questo
   }
-  pop(); //qui finisce la maschera
+  pop(); // qui finisce la maschera
 
-  //se c'è il mouse sopra, la tazza "fuma"
+  // se c'è il mouse sopra, la tazza "fuma"
   if (evidenziata) {
     drawVapore(x, yBase - h);
   }
@@ -271,7 +265,7 @@ function drawTazza(x, yAppoggio, w, percentuali, evidenziata) {
 
 function drawVapore(x, yTop) {
   noFill();
-  stroke("#f1dcc0"); // chiaro, sotto il vassoio è scuro
+  stroke("#F1DCC0"); // chiaro, perché ora sotto c'è il legno del vassoio
   strokeWeight(2);
   /* 3 linee a forma di S: ognuna è fatta da due mezzi archi
   che stanno uno sotto all'altro*/
@@ -280,74 +274,107 @@ function drawVapore(x, yTop) {
     /* funzione arc i primi due valori sono per il centro dell'arco
     terzo e quarto sono per la larghezza e l'altezza
     quinto e sesto gli angoli tra cui l'arco è compreso (quindi in tot 180 gradi) */
-    arc(xVapore, yTop - 8, 8, 8, -HALF_PI, HALF_PI);
-    arc(xVapore, yTop - 16, 8, 8, HALF_PI, PI + HALF_PI);
+    arc(xVapore, yTop - 8, 8, 8, -90, 90);
+    arc(xVapore, yTop - 16, 8, 8, 90, 270);
   }
 }
 
+// legenda a forma di scontrino, appoggiata nell'angolo in alto a destra del vassoio
 function drawLegenda() {
-  let x = width - 290;
-  let y = 150;
+  let larghezza = 300;
+  let altezza = 470;
 
-  // cartoncino legenda laterale
+  push();
+  // sposto l'origine nell'angolo dello scontrino e lo giro di 2 gradi
+  // da qui in poi tutte le coordinate partono da (0, 0) = angolo in alto a sinistra dello scontrino
+  translate(width - 400, 55);
+  rotate(2); 
+
+  // carta dello scontrino
   noStroke();
   fill("#FBF7F0");
-  rect(x, y, 260, 590, 12);
+  rect(0, 0, larghezza, altezza);
 
-  textAlign(LEFT, TOP);
+  // bordo in basso seghettato quindi è una fila di triangolini come uno scontrino strappato
+  for (let xz = 0; xz < larghezza; xz = xz + 10) {
+    triangle(xz, altezza, xz + 10, altezza, xz + 5, altezza + 7);
+  }
+
+  // intestazione
   fill("#3B2116");
-  textSize(22);
-  text("Legenda", x + 20, y + 20);
+  textAlign(CENTER, TOP);
+  textSize(18);
+  text("LEGENDA", larghezza / 2, 20);
+  drawTratteggio(50, larghezza);
 
-  //grandezza e posizione orizzontale
-  textSize(14);
-  text("Ogni tazza rappresenta un paese.", x + 20, y + 60);
-  text("Più è grande, più caffè si beve (kg per persona in un anno).", x + 20, y + 82, 220);
-  /* qui il quarto parametro 220 è per indicare la larghezza massima delle righe
-  e far andare a capo il testo anziché farlo uscire dal rettangolo */
+  // grandezza e posizione orizzontale
+  textAlign(LEFT, TOP);
+  textSize(13);
+  text("Ogni tazza rappresenta un paese.", 20, 62);
+  text("Più è grande e a destra, più caffè si beve.", 20, 82, 260);
+  /* qui il quarto parametro 260 è per indicare la larghezza massima delle righe
+  e far andare a capo il testo anziché farlo uscire dallo scontrino */
 
-  // tazze nella legenda per far capire le proporzioni basate su AREA
-  // tazzina per 2kg a persona
-  let w2 = larghezzaTazza(2);
-  // tazzina per 6kg a persona
-  let w6 = larghezzaTazza(6);
+  // tazze di esempio per far capire le proporzioni basate su AREA
+  let w2 = larghezzaTazza(2); // tazzina per 2 kg a persona
+  let w6 = larghezzaTazza(6); // tazzina per 6 kg a persona
   let esempio = [20, 40, 20, 20];
-  drawTazza(x + 70, y + 225, w2, esempio, false);
-  drawTazza(x + 170, y + 225, w6, esempio, false);
+  drawTazza(90, 185, w2, esempio, false);
+  drawTazza(200, 185, w6, esempio, false);
   // false serve perché altrimenti se passassi sopra il mouse cambierebbe il bordo
   noStroke();
   fill("#8C735E");
-  textSize(12);
+  textSize(11);
   textAlign(CENTER, TOP);
-  text("2 kg", x + 70, y + 235);
-  text("6 kg", x + 170, y + 235);
+  text("2 kg", 90, 192);
+  text("6 kg", 200, 192);
 
   // posizione verticale
-  textAlign(LEFT, TOP);
   fill("#3B2116");
-  textSize(14);
-  text("Più è in alto, più caffè si beve con il latte (cappuccino e caffellatte).", x + 20, y + 270, 220);
+  textSize(13);
+  textAlign(LEFT, TOP);
+  text("Più è in alto, più latte si beve con il caffè (cappuccino e caffellatte).", 20, 222, 260);
+  drawTratteggio(268, larghezza);
 
-  // strati elencati dall'alto verso il basso, come si vedono nella tazza
-  text("Ogni strato è una bevanda:", x + 20, y + 340);
-  let yRiga = y + 366;
-  for (let i = bevande.length - 1; i >= 0; i--) {
+  // strati in due colonne, nello stesso ordine della tazza (in alto le bevande chiare)
+  text("Ogni strato è una bevanda:", 20, 280);
+  for (let i = 0; i < bevande.length; i++) {
+    // i = 3 e 2 (caffellatte, cappuccino) nella prima riga, i = 1 e 0 nella seconda
+    let colonna = (bevande.length - 1 - i) % 2; // 0 = sinistra, 1 = destra
+    let rigaStrato = floor((bevande.length - 1 - i) / 2); // 0 = sopra, 1 = sotto
+    let xStrato = 20 + colonna * 130;
+    let yStrato = 304 + rigaStrato * 22;
     fill(coloriBevande[i]);
-    rect(x + 20, yRiga, 18, 14, 3);
+    stroke("#C9B49C");
+    strokeWeight(1);
+    rect(xStrato, yStrato, 16, 13, 3);
+    noStroke();
     fill("#3B2116");
-    text(nomiBevande[i], x + 48, yRiga);
-    yRiga = yRiga + 24;
+    text(nomiBevande[i], xStrato + 24, yStrato - 1);
   }
+  drawTratteggio(354, larghezza);
 
+  // interazione e fonte dei dati
   fill("#7A4E33");
   text(
     "Passa il mouse su una tazza per vedere quali, fra le bevande a base di caffè, sono più diffuse in ogni paese.",
-    x + 20, y + 470, 220
+    20, 366, 260
   );
-
   fill("#A8927E");
-  textSize(10);
-  text("Kg di caffè a persona: Euromonitor 2013.", x + 20, y + 550, 220);
+  textSize(9);
+  text("Kg di caffè a persona: Euromonitor 2013.", 20, 428, 260);
+
+  pop();
+}
+
+// linea tratteggiata orizzontale tipo righe scontrino
+function drawTratteggio(y, larghezza) {
+  stroke("#C9B49C");
+  strokeWeight(1);
+  for (let x = 20; x < larghezza - 20; x = x + 8) {
+    line(x, y, x + 4, y); // trattino di 4 px, poi 4 px vuoti
+  }
+  noStroke();
 }
 
 // disegno il riquadro con i dettagli del paese su cui c'è il mouse
